@@ -9,7 +9,6 @@ metadata:
   annotations:
     description: |-
       loki Template for use in OpenShift 201 lab. 
-
       WARNING: Any configuration stored will be lost upon pod destruction. ConfigMaps should be used for codified configuration. 
     iconClass: icon-other-unknown
     openshift.io/display-name: loki-openshift201
@@ -45,6 +44,7 @@ objects:
         targetPort: http-metrics
     selector:
       app: ${LOKI_SERVICE_NAME}
+      release: ${LOKI_SERVICE_NAME}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:

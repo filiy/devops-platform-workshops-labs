@@ -9,7 +9,6 @@ metadata:
   annotations:
     description: |-
       Grafana Template for use in OpenShift 201 lab without persistent storage. 
-
       WARNING: Any configuration stored will be lost upon pod destruction. ConfigMaps should be used for codified configuration. 
     iconClass: icon-other-unknown
     openshift.io/display-name: grafana-openshift201
@@ -72,15 +71,6 @@ objects:
           deploymentconfig: ${GRAFANA_SERVICE_NAME}
       spec:
         containers:
-        - name: promtail-container
-          image: grafana/promtail:latest
-          args:
-          - -config.file=/etc/promtail/promtail.yaml
-          volumeMounts:
-          - name: logs
-            mountPath: /logs
-          - name: promtail-config
-            mountPath: /etc/promtail
         - image: grafana/grafana:v6.2.0
           imagePullPolicy: IfNotPresent
           name: ${GRAFANA_SERVICE_NAME}
@@ -88,30 +78,6 @@ objects:
           - containerPort: 3000
             protocol: TCP
           resources: {}
-          env: 
-            - name: GF_PATHS_LOGS
-              value: /logs
-            - name: GF_LOG_MODE
-              value: file
-            - name: GF_DATABASE_TYPE
-              value: postgres
-            - name: GF_DATABASE_HOST
-              value: ${DB_SERVICE}
-            - name: GF_DATABASE_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: ${DB_SECRET}
-                  key: app-db-name
-            - name: GF_DATABASE_USER
-              valueFrom:
-                secretKeyRef:
-                  name: ${DB_SECRET}
-                  key: app-db-username
-            - name: GF_DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: ${DB_SECRET}
-                  key: app-db-password
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
@@ -121,18 +87,12 @@ objects:
             name: volume-ttg2w
           - mountPath: /var/lib/grafana/dashboards/
             name: volume-y3co5
-          - mountPath: /logs
-            name: logs
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
-        - configMap: 
-            defaultMode: 420
-            name: ${GRAFANA_SERVICE_NAME}-promtail-config
-          name: promtail-config
         - configMap:
             defaultMode: 420
             name: ${GRAFANA_SERVICE_NAME}-dashboard-providers
@@ -145,8 +105,6 @@ objects:
             defaultMode: 420
             name: ${GRAFANA_SERVICE_NAME}-dashboards
           name: volume-y3co5
-        - name: logs
-          emptyDir: {}
     test: false
     triggers:
     - type: ConfigChange
@@ -187,12 +145,12 @@ objects:
   kind: Route
   metadata:
     annotations:
-   #   openshift.io/host.generated: "true" ##remove this in a template
+      openshift.io/host.generated: "true"
     labels:
       app: ${GRAFANA_SERVICE_NAME}
     name: ${GRAFANA_SERVICE_NAME}
   spec:
-  #  host: ${GRAFANA_SERVICE_NAME}-${NAMESPACE}.${ROUTE_SUBDOMAIN}
+    host: ${GRAFANA_SERVICE_NAME}-${NAMESPACE}.${ROUTE_SUBDOMAIN}
     port:
       targetPort: 3000-tcp
     to:
@@ -368,30 +326,6 @@ objects:
       app: ${GRAFANA_SERVICE_NAME}
     name: ${GRAFANA_SERVICE_NAME}-dashboards
 - apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: ${GRAFANA_SERVICE_NAME}-promtail-config
-    labels: 
-      app: ${GRAFANA_SERVICE_NAME}
-  data:
-    promtail.yaml: |
-      server:
-        http_listen_port: 9080
-        grpc_listen_port: 0
-      positions:
-        filename: /tmp/positions.yaml
-      clients:
-        - url: http://${LOKI_SERVICE_NAME}:3100/api/prom/push
-      scrape_configs:
-        - job_name: system 
-          entry_parser: raw 
-          static_configs: 
-            - targets: 
-                - localhost 
-              labels: 
-                job: grafana
-                __path__: /logs/grafana.log
-- apiVersion: v1
   data:
     datasource.yml: "# config file version\napiVersion: 1\n\ndatasources:\n- name:
       Prometheus\n  type: prometheus\n  access: proxy\n  orgId: 1\n  url: http://${PROMETHEUS_SERVICE_NAME}:80
@@ -433,11 +367,3 @@ parameters:
   name: ROUTE_SUBDOMAIN
   required: true
   value: pathfinder.gov.bc.ca
-- description: The secret name used with all database connection info
-  displayName: Database secret used when integrating Patroni
-  name: DB_SECRET
-  value: secretName
-- description: The master service of the database endpoint
-  displayName: Database service 
-  name: DB_SERVICE
-  value: patroni
