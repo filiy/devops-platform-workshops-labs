@@ -78,6 +78,11 @@ objects:
           - containerPort: 3000
             protocol: TCP
           resources: {}
+          env: 
+            - name: GF_PATHS_LOGS
+              value: /logs
+            - name: GF_LOG_MODE
+              value: file
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
@@ -87,6 +92,8 @@ objects:
             name: volume-ttg2w
           - mountPath: /var/lib/grafana/dashboards/
             name: volume-y3co5
+          - mountPath: /logs
+            name: logs
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
@@ -105,6 +112,8 @@ objects:
             defaultMode: 420
             name: ${GRAFANA_SERVICE_NAME}-dashboards
           name: volume-y3co5
+        - name: logs
+          emptyDir: {}
     test: false
     triggers:
     - type: ConfigChange
@@ -145,12 +154,12 @@ objects:
   kind: Route
   metadata:
     annotations:
-      openshift.io/host.generated: "true"
+   #   openshift.io/host.generated: "true" ##remove this in a template
     labels:
       app: ${GRAFANA_SERVICE_NAME}
     name: ${GRAFANA_SERVICE_NAME}
   spec:
-    host: ${GRAFANA_SERVICE_NAME}-${NAMESPACE}.${ROUTE_SUBDOMAIN}
+  #  host: ${GRAFANA_SERVICE_NAME}-${NAMESPACE}.${ROUTE_SUBDOMAIN}
     port:
       targetPort: 3000-tcp
     to:

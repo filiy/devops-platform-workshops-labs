@@ -126,4 +126,4 @@ parameters:
   displayName: Loki Service Name
   name: LOKI_SERVICE_NAME
   required: true
-  value: loki
+  value: loki 
