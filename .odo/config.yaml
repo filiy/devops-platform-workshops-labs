@@ -1,0 +1,9 @@
+kind: LocalConfig
+apiversion: odo.openshift.io/v1alpha1
+ComponentSettings:
+  Type: httpd:2.4
+  SourceLocation: /home/phil/github/201-workshop/devops-platform-workshops-labs
+  SourceType: local
+  Application: app
+  Project: 4zq6uj-filiy-ocp201-tst-tools
+  Name: httpd-devops-platf-ublc
