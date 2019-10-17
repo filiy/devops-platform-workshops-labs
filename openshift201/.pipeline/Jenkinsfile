@@ -10,55 +10,19 @@ def GRAFANA_SERVICE = "grafana"
 
 //Pipeline
 node {
-            stage ('Deploy Development Environment'){
+            stage('Testing Stage'){
+                
                 parallel (
-                    "${LOKI_SERVICE}": {
-                            dir ('simple_pipeline') {
-                                checkout scm
-                                sh "oc process -f openshift201/templates/template_loki_sample.yaml -p  LOKI_SERVICE_NAME=${LOKI_SERVICE} | oc apply -f - -n ${DEV_NAMESPACE}"
-                                sh "echo Wait for service to be up"
-                                timeout (time: 180, unit: 'SECONDS'){
-                                    openshift.withCluster() {
-                                    openshift.withProject("${DEV_NAMESPACE}") {
-                                        def dc = openshift.selector('deployment', "${LOKI_SERVICE}")
-                                        // this will wait until the desired replicas are available
-                                        dc.rollout().status()
-                                    }
-                                    }
-                                }
-                            }
-                        },
-                        "${PROMETHEUS_SERVICE}": {
-                            dir ('simple_pipeline') {
-                                sh "oc process -f openshift201/templates/template_prometheus_sample.yaml -p  PROMETHEUS_SERVICE_NAME=${PROMETHEUS_SERVICE} | oc apply -f - -n ${DEV_NAMESPACE}"
-                                sh "echo Wait for service to be up"
-                                timeout (time: 180, unit: 'SECONDS'){
-                                    openshift.withCluster() {
-                                    openshift.withProject("${DEV_NAMESPACE}") {
-                                        def dc = openshift.selector('deployment', "${PROMETHEUS_SERVICE}")
-                                        // this will wait until the desired replicas are available
-                                        dc.rollout().status()
-                                    }
-                                    }
-                                }
-
-                        }
-                        },
-                        "${GRAFANA_SERVICE}": {
-                            dir ('simple_pipeline') {
-                                sh "oc process -f openshift201/templates/template_grafana_sample.yaml -p  GRAFANA_SERVICE_NAME=${GRAFANA_SERVICE} -p NAMESPACE=${DEV_NAMESPACE} | oc apply -f - -n ${DEV_NAMESPACE}"
-                                sh "echo Wait for service to be up"
-                                timeout (time: 240, unit: 'SECONDS'){
-                                    openshift.withCluster() {
-                                    openshift.withProject("${DEV_NAMESPACE}") {
-                                        def dc = openshift.selector('dc', "${GRAFANA_SERVICE}")
-                                        // this will wait until the desired replicas are available
-                                        dc.rollout().status()
-                                    }
-                                    }
-                                }
-                    }
+                    'load test': {
+                        sh "echo load test"
+                    },
+                    'security test': {
+                        sh "echo security test"
+                    },
+                    'e2e test': {
+                        echo "e2e test"
                     }
                 )
-        }
+
+            }
 }
