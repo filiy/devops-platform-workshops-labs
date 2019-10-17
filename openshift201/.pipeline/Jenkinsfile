@@ -12,15 +12,18 @@ node {
             stage ('Deploy Loki to Dev'){
                 dir ('simple_pipeline') {
                     checkout scm
-                    sh "oc process -f openshift201/templates/loki.yaml -p NAME=${LOKI_SERVICE} | oc apply -f - -n ${DEV_NAMESPACE}"
-                }
-            }
-            stage ('Wait for Loki Up'){
-                dir ('simple_pipeline') {
+                    sh "oc process -f openshift201/templates/template_loki_sample.yaml -p  NAME=${LOKI_SERVICE} | oc apply -f - -n ${DEV_NAMESPACE}"
                     sh "echo Wait for service to be up"
-                    openshiftVerifyService apiURL: '', authToken: '', namespace: "${DEV_NAMESPACE}", svcName: "${LOKI_SERVICE}", verbose: 'false'
-                }
-            }
-    }
+                    timeout (time: 180, unit: 'SECONDS'){
+                        openshift.withCluster() {
+                        openshift.withProject("${DEV_NAMESPACE}") {
+                            def dc = openshift.selector('deployment', "${LOKI_SERVICE}")
+                            // this will wait until the desired replicas are available
+                            dc.rollout().status()
+                        }
+                        }
+                    }
 
-    
+             }
+        }
+    }
