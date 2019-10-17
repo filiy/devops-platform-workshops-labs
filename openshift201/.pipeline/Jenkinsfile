@@ -25,6 +25,29 @@ node {
                     }
 
              }
-        }
+            }
+            stage ("Wait for Validation"){
+                timeout (time: 20, unit: "MINUTES"){
+                    input id: 'Approve01', message: 'Want to deploy to PROD?', ok: 'HANG TIGHT!'
+                }
+            }
+            stage ('Deploy Loki to Prod'){
+                dir ('simple_pipeline') {
+                    checkout scm
+                    sh "oc process -f openshift201/templates/loki.yaml -p  NAME=${LOKI_SERVICE} | oc apply -f - -n ${PROD_NAMESPACE}"
+                    sh "echo Wait for service to be up"
+                    timeout (time: 180, unit: 'SECONDS'){
+                        openshift.withCluster() {
+                        openshift.withProject("${PROD_NAMESPACE}") {
+                            def dc = openshift.selector('statefulset', "${LOKI_SERVICE}")
+                            // this will wait until the desired replicas are available
+                            dc.rollout().status()
+                        }
+                        }
+                    }
+
+             }
+            }
+
     }
 
