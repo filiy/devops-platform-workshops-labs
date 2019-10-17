@@ -13,7 +13,14 @@ node {
                 dir ('simple_pipeline') {
                     checkout scm
                     sh "oc process -f openshift201/templates/loki.yaml -p NAME=${LOKI_SERVICE} | oc apply -f - -n ${DEV_NAMESPACE}"
-
+                }
+            }
+            stage ('Wait for Loki Up'){
+                dir ('simple_pipeline') {
+                    sh "echo Wait for service to be up"
+                    openshiftVerifyService apiURL: '', authToken: '', namespace: "${DEV_NAMESPACE}", svcName: "${LOKI_SERVICE}", verbose: 'false'
                 }
             }
     }
+
+    
