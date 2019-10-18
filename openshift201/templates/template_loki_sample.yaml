@@ -44,7 +44,6 @@ objects:
         targetPort: http-metrics
     selector:
       app: ${LOKI_SERVICE_NAME}
-      release: ${LOKI_SERVICE_NAME}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
