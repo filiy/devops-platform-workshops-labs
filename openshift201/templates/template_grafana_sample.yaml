@@ -96,7 +96,7 @@ objects:
             name: logs
         - image: grafana/promtail:latest
           name: promtail-container
-          arg:
+          args:
           - -config.file=/etc/promtail/promtail.yaml
           volumeMounts:
           - name: logs
