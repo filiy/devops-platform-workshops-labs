@@ -94,6 +94,15 @@ objects:
             name: volume-y3co5
           - mountPath: /logs
             name: logs
+        - image: grafana/promtail:latest
+          name: promtail-container
+          arg:
+          - -config.file=/etc/promtail/promtail.yaml
+          volumeMounts:
+          - name: logs
+            mountPath: /logs
+          - name: promtail-config
+            mountPath: /etc/promtail
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
@@ -114,6 +123,10 @@ objects:
           name: volume-y3co5
         - name: logs
           emptyDir: {}
+        - configMap:
+            defaultMode: 420
+            name: ${GRAFANA_SERVICE_NAME}-promtail-config
+          name: promtail-config
     test: false
     triggers:
     - type: ConfigChange
@@ -346,6 +359,30 @@ objects:
     labels:
       app: ${GRAFANA_SERVICE_NAME}
     name: ${GRAFANA_SERVICE_NAME}-datasources
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: ${GRAFANA_SERVICE_NAME}-promtail-config
+    labels: 
+      app: ${GRAFANA_SERVICE_NAME}
+  data:
+    promtail.yaml: |
+      server:
+        http_listen_port: 9080
+        grpc_listen_port: 0
+      positions:
+        filename: /tmp/positions.yaml
+      clients:
+        - url: http://${LOKI_SERVICE_NAME}:3100/api/prom/push
+      scrape_configs:
+        - job_name: system 
+          entry_parser: raw 
+          static_configs: 
+            - targets: 
+                - localhost 
+              labels: 
+                job: grafana
+                __path__: /logs/grafana.log
 parameters:
 - description: Maximum amount of memory the container can use.
   displayName: Memory Limit
